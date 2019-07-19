@@ -1,0 +1,17 @@
+<!-- edited with TESLA -->
+<CBL>
+	<sequence>
+        <name></name>
+        <report></report>
+        <looping></looping>
+        <stepPreRunPath></stepPreRunPath>
+        <stepPostRunPath></stepPostRunPath>
+        <VI_for_UUT_selection></VI_for_UUT_selection>
+        <debugPath></debugPath>
+        <runTimePath></runTimePath>
+        <banner></banner>
+        <startup></startup>
+        <main></main>
+        <cleanup></cleanup>
+        </sequence>
+</CBL>
