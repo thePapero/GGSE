@@ -53,6 +53,7 @@
 
 #include <QMainWindow>
 #include <QString>
+#include <QTreeWidgetItem>
 #include "fieldtype.h"
 
 class DomModel;
@@ -83,18 +84,25 @@ public slots:
     //void documentWasModified();
 
 private:
+    void setSignals();
     void createActions();
     void createStatusBar();
+    void onCustomContextMenu(const QPoint &point);
+    void showContextMenu(QModelIndex index, const QPoint& globalPos);
     void maybeSave();
     bool openFileByName(QString fileName);
 
     DomModel *model;
     QMenu *fileMenu;
+    QMenu *contextMenu;
     QToolBar *fileToolBar;
     QString xmlPath;
     QTreeView *view;
 
-    QAction *addStepAct;
+    QAction* addStepAct;
+    QAction* addConditionAct;
+    QAction* addInputAct;
+    QAction* addOutputAct;
 };
 
 #endif // MAINWINDOW_H

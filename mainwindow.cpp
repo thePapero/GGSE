@@ -63,9 +63,6 @@
 
 MainWindow::MainWindow() : QMainWindow(), model(nullptr)
 {
-    createActions();
-    createStatusBar();
-
     model = new DomModel(QDomDocument(), this);
     view = new QTreeView(this);
     view->setModel(model);
@@ -73,7 +70,22 @@ MainWindow::MainWindow() : QMainWindow(), model(nullptr)
     setCentralWidget(view);
     setWindowTitle(tr("GGSE - A Ground Ground Sequence Editor"));
 
-    //aggiorna la toolbar in base alla selezione
+    //set custom context menu
+    contextMenu = new QMenu(view);
+    view->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    createActions();
+    createStatusBar();
+
+    //connect signals
+    connect(view, &QTreeView::expanded, this, &MainWindow::setToSize);
+    connect(view, &QTreeView::collapsed, this, &MainWindow::setToSize);
+    connect(view, &QTreeView::customContextMenuRequested, this, &MainWindow::onCustomContextMenu);
+    setSignals();
+}
+
+void MainWindow::setSignals()
+{
     connect(view->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::updateActions);
 }
 
@@ -84,10 +96,8 @@ void MainWindow::openFile()
     {
         if(openFileByName(filePath))
         {
-            //pare che aggiornando il modello legato alla view vengano resettati i signal
-            connect(view->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::updateActions);
-            connect(view, &QTreeView::expanded, this, &MainWindow::setToSize);
-            connect(view, &QTreeView::collapsed, this, &MainWindow::setToSize);
+            //seems that update the model cause a signal reset.
+            setSignals();
         }
     }
 }
@@ -106,10 +116,8 @@ void MainWindow::newFile()
         QMessageBox::information(this,tr("Info"), tr("An error occurred while creating a new File."));
     else
     {
-        //pare che aggiornando il modello legato alla view vengano resettati i signal
-        connect(view->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::updateActions);
-        connect(view, &QTreeView::expanded, this, &MainWindow::setToSize);
-        connect(view, &QTreeView::collapsed, this, &MainWindow::setToSize);
+        //seems that update the model cause a signal reset.
+        setSignals();
     }
 }
 
@@ -172,7 +180,7 @@ void MainWindow::collapseAll()
 void MainWindow::about()
 {
     QMessageBox::about(this, tr("About Application"),
-                       tr("Un'applicazione realizzata senza nessun motivo in particolare"));
+                       tr("An application with no reason."));
 }
 
 void MainWindow::createActions()
@@ -214,6 +222,7 @@ void MainWindow::createActions()
     connect(addStepAct, &QAction::triggered, this, &MainWindow::addElement);
     fileToolBar->addAction(addStepAct);
     addStepAct->setEnabled(false);
+    contextMenu->addAction(addStepAct); //add to context menu
 
     fileToolBar->addSeparator();
 
@@ -235,12 +244,51 @@ void MainWindow::createActions()
     const QIcon exitIcon = QIcon::fromTheme("application-exit");
     QAction *exitAct = fileMenu->addAction(exitIcon, tr("E&xit"), this, &QWidget::close);
     exitAct->setShortcut(tr("Exit the application"));
+
+    //addStepAct = new QAction("Add Step",contextMenu);
+    addConditionAct = new QAction("Add Condition", contextMenu);
+    addInputAct = new QAction("Add Input", contextMenu);
+    addOutputAct = new QAction("Add Output", contextMenu);
 }
 
 void MainWindow::createStatusBar()
 {
     //il widget è creato automaticamente alla prima chiamata
     statusBar()->showMessage(tr("Ready"));
+}
+
+void MainWindow::onCustomContextMenu(const QPoint &point)
+{
+    QModelIndex index = view->indexAt(point);
+
+    showContextMenu(index, view->viewport()->mapToGlobal(point));
+}
+
+void MainWindow::showContextMenu(QModelIndex index, const QPoint& globalPos)
+{
+    QMenu menu;
+    FieldType type = model->getItemType(index);
+    if (index.isValid())
+    {
+        switch(type) {
+        case FieldType::step:
+            menu.addAction(addStepAct);
+            menu.addAction(addConditionAct);
+            menu.addAction(addInputAct);
+            menu.addAction(addOutputAct);
+            break;
+        case FieldType::section:
+            menu.addAction(addStepAct);
+            break;
+        case FieldType::input:
+            break;
+        case FieldType::output:
+            break;
+        default:
+            break;
+        }
+        menu.exec(globalPos);
+    }
 }
 
 //verificare il tipo di step selezionato e in base a quello cambiare etichetta al pulsante
